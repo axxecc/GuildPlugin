@@ -2,9 +2,9 @@ package com.guild.gui;
 
 import com.guild.GuildPlugin;
 import com.guild.core.gui.GUI;
-import com.guild.core.gui.GUIManager;
 import com.guild.core.utils.ColorUtils;
-import org.bukkit.Bukkit;
+import com.guild.util.FormatUtil;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -13,9 +13,10 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
 
 import com.guild.core.utils.CompatibleScheduler;
+
+import static com.guild.util.FormatUtil.sendMessage;
 
 /**
  * 主工会GUI - 六个主要入口
@@ -29,8 +30,10 @@ public class MainGuildGUI implements GUI {
     }
     
     @Override
-    public String getTitle() {
-        return ColorUtils.colorize(plugin.getConfigManager().getGuiConfig().getString("main-menu.title", "&6工会系统"));
+    public Component getTitle() {
+        String rawTitle = plugin.getConfigManager().getGuiConfig().getString("main-menu.title", "&6工会系统");
+        // 使用 FormatUtil 转换为 Component
+        return FormatUtil.parseColorCodes(rawTitle);
     }
     
     @Override
@@ -144,7 +147,7 @@ public class MainGuildGUI implements GUI {
             CompatibleScheduler.runTask(plugin, () -> {
                 if (guild == null) {
                     String message = plugin.getConfigManager().getMessagesConfig().getString("gui.no-guild", "&c您还没有工会");
-                    player.sendMessage(ColorUtils.colorize(message));
+                    sendMessage(player, message);
                     return;
                 }
                 
@@ -165,7 +168,7 @@ public class MainGuildGUI implements GUI {
             CompatibleScheduler.runTask(plugin, () -> {
                 if (guild == null) {
                     String message = plugin.getConfigManager().getMessagesConfig().getString("gui.no-guild", "&c您还没有工会");
-                    player.sendMessage(ColorUtils.colorize(message));
+                    sendMessage(player, message);
                     return;
                 }
                 
@@ -186,7 +189,7 @@ public class MainGuildGUI implements GUI {
             CompatibleScheduler.runTask(plugin, () -> {
                 if (guild == null) {
                     String message = plugin.getConfigManager().getMessagesConfig().getString("gui.no-guild", "&c您还没有工会");
-                    player.sendMessage(ColorUtils.colorize(message));
+                    sendMessage(player, message);
                     return;
                 }
                 
@@ -196,7 +199,7 @@ public class MainGuildGUI implements GUI {
                     CompatibleScheduler.runTask(plugin, () -> {
                         if (member == null || !member.getRole().canInvite()) {
                             String message = plugin.getConfigManager().getMessagesConfig().getString("gui.no-permission", "&c权限不足");
-                            player.sendMessage(ColorUtils.colorize(message));
+                            sendMessage(player, message);
                             return;
                         }
                         
@@ -219,7 +222,7 @@ public class MainGuildGUI implements GUI {
             CompatibleScheduler.runTask(plugin, () -> {
                 if (guild == null) {
                     String message = plugin.getConfigManager().getMessagesConfig().getString("gui.no-guild", "&c您还没有工会");
-                    player.sendMessage(ColorUtils.colorize(message));
+                    sendMessage(player, message);
                     return;
                 }
                 
@@ -229,7 +232,7 @@ public class MainGuildGUI implements GUI {
                     CompatibleScheduler.runTask(plugin, () -> {
                         if (member == null || member.getRole() != com.guild.models.GuildMember.Role.LEADER) {
                             String message = plugin.getConfigManager().getMessagesConfig().getString("gui.leader-only", "&c只有工会会长才能执行此操作");
-                            player.sendMessage(ColorUtils.colorize(message));
+                            sendMessage(player, message);
                             return;
                         }
                         
@@ -261,7 +264,7 @@ public class MainGuildGUI implements GUI {
             CompatibleScheduler.runTask(plugin, () -> {
                 if (guild == null) {
                     String message = plugin.getConfigManager().getMessagesConfig().getString("gui.no-guild", "&c您还没有工会");
-                    player.sendMessage(ColorUtils.colorize(message));
+                    sendMessage(player, message);
                     return;
                 }
                 
@@ -271,7 +274,7 @@ public class MainGuildGUI implements GUI {
                     CompatibleScheduler.runTask(plugin, () -> {
                         if (member == null || member.getRole() != com.guild.models.GuildMember.Role.LEADER) {
                             String message = plugin.getConfigManager().getMessagesConfig().getString("gui.leader-only", "&c只有工会会长才能管理关系");
-                            player.sendMessage(ColorUtils.colorize(message));
+                            sendMessage(player, message);
                             return;
                         }
                         
@@ -294,7 +297,7 @@ public class MainGuildGUI implements GUI {
             CompatibleScheduler.runTask(plugin, () -> {
                 if (guild != null) {
                     String message = plugin.getConfigManager().getMessagesConfig().getString("create.already-in-guild", "&c您已经在一个工会中了！");
-                    player.sendMessage(ColorUtils.colorize(message));
+                    sendMessage(player, message);
                     return;
                 }
                 
@@ -310,6 +313,11 @@ public class MainGuildGUI implements GUI {
      */
     private void fillBorder(Inventory inventory) {
         ItemStack border = createItem(Material.BLACK_STAINED_GLASS_PANE, " ");
+        ItemMeta meta = border.getItemMeta();
+        if (meta != null) {
+            meta.setHideTooltip(true);
+            border.setItemMeta(meta);
+        }
         for (int i = 0; i < 9; i++) {
             inventory.setItem(i, border);
             inventory.setItem(i + 45, border);
@@ -326,7 +334,7 @@ public class MainGuildGUI implements GUI {
     private ItemStack createItem(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        
+
         if (meta != null) {
             meta.setDisplayName(name);
             if (lore.length > 0) {

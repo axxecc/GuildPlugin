@@ -1,9 +1,12 @@
 package com.guild.gui;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.bukkit.Bukkit;
+import com.guild.GuildPlugin;
+import com.guild.core.gui.GUI;
+import com.guild.core.utils.ColorUtils;
+import com.guild.core.utils.CompatibleScheduler;
+import com.guild.models.Guild;
+import com.guild.util.FormatUtil;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
@@ -11,53 +14,55 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
-import com.guild.GuildPlugin;
-import com.guild.core.gui.GUI;
-import com.guild.core.utils.ColorUtils;
-import com.guild.models.Guild;
+import java.util.ArrayList;
+import java.util.List;
+
+import static com.guild.util.FormatUtil.sendMessage;
 
 /**
  * 工会列表管理GUI
  */
 public class GuildListManagementGUI implements GUI {
-    
+
     private final GuildPlugin plugin;
     private final Player player;
-    private int currentPage = 0;
     private final int itemsPerPage = 12; // 从 28 减少到 12，界面更简洁
+    private int currentPage = 0;
     private List<Guild> allGuilds = new ArrayList<>();
-    
+
     public GuildListManagementGUI(GuildPlugin plugin, Player player) {
         this.plugin = plugin;
         this.player = player;
         loadGuilds();
     }
-    
+
     @Override
-    public String getTitle() {
-        return ColorUtils.colorize("&4工会列表管理");
+    public Component getTitle() {
+        String rawTitle = "&4工会列表管理";
+        // 使用 FormatUtil 转换为 Component
+        return FormatUtil.parseColorCodes(rawTitle);
     }
-    
+
     @Override
     public int getSize() {
         return 54;
     }
-    
+
     @Override
     public void setupInventory(Inventory inventory) {
         // 填充边框
         fillBorder(inventory);
-        
+
         // 设置工会列表
         setupGuildList(inventory);
-        
+
         // 设置分页按钮
         setupPaginationButtons(inventory);
-        
+
         // 设置操作按钮
         setupActionButtons(inventory);
     }
-    
+
     private void setupGuildList(Inventory inventory) {
         int startIndex = currentPage * itemsPerPage;
         int endIndex = Math.min(startIndex + itemsPerPage, allGuilds.size());
@@ -75,7 +80,7 @@ public class GuildListManagementGUI implements GUI {
             }
         }
     }
-    
+
     private ItemStack createGuildItem(Guild guild) {
         Material material = guild.isFrozen() ? Material.RED_WOOL : Material.GREEN_WOOL;
 
@@ -86,60 +91,66 @@ public class GuildListManagementGUI implements GUI {
 
         return createItem(material, ColorUtils.colorize("&6" + guild.getName()), lore.toArray(new String[0]));
     }
-    
+
     private void setupPaginationButtons(Inventory inventory) {
         int totalPages = (int) Math.ceil((double) allGuilds.size() / itemsPerPage);
-        
+
         // 上一页按钮
         if (currentPage > 0) {
-            inventory.setItem(45, createItem(Material.ARROW, ColorUtils.colorize("&a上一页"), 
-                ColorUtils.colorize("&7第 " + (currentPage) + " 页")));
+            inventory.setItem(45, createItem(Material.ARROW, ColorUtils.colorize("&a上一页"),
+                    ColorUtils.colorize("&7第 " + (currentPage) + " 页")));
         }
-        
+
         // 页码信息
         inventory.setItem(49, createItem(Material.PAPER, ColorUtils.colorize("&e第 " + (currentPage + 1) + " 页，共 " + totalPages + " 页")));
-        
+
         // 下一页按钮
         if (currentPage < totalPages - 1) {
-            inventory.setItem(53, createItem(Material.ARROW, ColorUtils.colorize("&a下一页"), 
-                ColorUtils.colorize("&7第 " + (currentPage + 2) + " 页")));
+            inventory.setItem(53, createItem(Material.ARROW, ColorUtils.colorize("&a下一页"),
+                    ColorUtils.colorize("&7第 " + (currentPage + 2) + " 页")));
         }
     }
-    
+
     private void setupActionButtons(Inventory inventory) {
         // 返回按钮
         inventory.setItem(46, createItem(Material.BARRIER, ColorUtils.colorize("&c返回")));
-        
+
         // 刷新按钮
         inventory.setItem(52, createItem(Material.EMERALD, ColorUtils.colorize("&a刷新列表")));
     }
-    
+
     private void fillBorder(Inventory inventory) {
         ItemStack border = createItem(Material.BLACK_STAINED_GLASS_PANE, " ");
-        
+
+        ItemMeta meta = border.getItemMeta();
+        if (meta != null) {
+            meta.setHideTooltip(true);
+            border.setItemMeta(meta);
+        }
+
         // 填充边框
         for (int i = 0; i < 9; i++) {
             inventory.setItem(i, border);
             inventory.setItem(i + 45, border);
         }
-        
+
         for (int i = 9; i < 45; i += 9) {
             inventory.setItem(i, border);
             inventory.setItem(i + 8, border);
         }
     }
-    
+
     private void loadGuilds() {
         plugin.getGuildService().getAllGuildsAsync().thenAccept(guilds -> {
             this.allGuilds = guilds;
-            Bukkit.getScheduler().runTask(plugin, () -> {
+            CompatibleScheduler.runTask(plugin, () -> {
                 if (player.isOnline()) {
                     refresh(player);
                 }
             });
         });
     }
-    
+
     @Override
     public void onClick(Player player, int slot, ItemStack clickedItem, ClickType clickType) {
         if (slot == 46) {
@@ -171,7 +182,7 @@ public class GuildListManagementGUI implements GUI {
             }
         }
     }
-    
+
     private void handleGuildClick(Player player, Guild guild, ClickType clickType) {
         if (clickType == ClickType.LEFT) {
             // 查看详情
@@ -184,58 +195,58 @@ public class GuildListManagementGUI implements GUI {
             toggleGuildFreeze(player, guild);
         }
     }
-    
+
     private void openGuildDetailGUI(Player player, Guild guild) {
         // 打开工会详情GUI
         plugin.getGuiManager().openGUI(player, new GuildDetailGUI(plugin, guild, player));
     }
-    
+
     private void deleteGuild(Player player, Guild guild) {
         if (!player.hasPermission("guild.admin")) {
-            player.sendMessage(ColorUtils.colorize("&c您没有权限执行此操作！"));
+            sendMessage(player, "&c您没有权限执行此操作！");
             return;
         }
         // 打开统一的确认删除GUI
         plugin.getGuiManager().openGUI(player, new ConfirmDeleteGuildGUI(plugin, guild));
     }
-    
+
     private void toggleGuildFreeze(Player player, Guild guild) {
         boolean newStatus = !guild.isFrozen();
         plugin.getGuildService().updateGuildFrozenStatusAsync(guild.getId(), newStatus).thenAccept(success -> {
             if (success) {
                 String message = newStatus ? "&a工会 " + guild.getName() + " 已被冻结！" : "&a工会 " + guild.getName() + " 已被解冻！";
-                player.sendMessage(ColorUtils.colorize(message));
+                sendMessage(player, message);
                 loadGuilds(); // 刷新列表
             } else {
-                player.sendMessage(ColorUtils.colorize("&c操作失败！"));
+                sendMessage(player, "&c操作失败！");
             }
         });
     }
-    
+
     private ItemStack createItem(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
-        
+
         if (meta != null) {
             meta.setDisplayName(name);
-            
+
             List<String> loreList = new ArrayList<>();
             for (String line : lore) {
                 loreList.add(line);
             }
             meta.setLore(loreList);
-            
+
             item.setItemMeta(meta);
         }
-        
+
         return item;
     }
-    
+
     @Override
     public void onClose(Player player) {
         // 关闭时的处理
     }
-    
+
     @Override
     public void refresh(Player player) {
         if (player.isOnline()) {

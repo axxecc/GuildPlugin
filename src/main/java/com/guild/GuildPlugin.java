@@ -132,6 +132,11 @@ public class GuildPlugin extends JavaPlugin {
                 serviceContainer.shutdown();
             }
 
+            // 关闭数据库
+            if (databaseManager != null) {
+                databaseManager.close();
+            }
+
             logger.info("工会插件已关闭");
 
         } catch (Exception e) {

@@ -529,15 +529,12 @@ public class GuildCommand implements CommandExecutor, TabCompleter {
                         }
 
                         sendMessage(targetPlayer, builder ->
-                                builder.text("测试 %targetPlayer%, %player%, %plugin%"
-                                                .replace("%targetPlayer%", targetPlayer.getName())
-                                                .replace("%player%", player.getName())
-                                                .replace("%plugin%", ServerUtils.getServerVersion()))
-                                        .space(2)
+                                builder
                                         .runCommand("&a[同意]", "/guild accept " + player.getName(), "&a点击同意 {player}"
-                                                .replace("{player}", targetPlayer.getName()))
+                                                .replace("{player}", player.getName()))
                                         .space(2)
-                                        .runCommand("&c[拒绝]", "/guild decline " + player.getName(), "&c点击拒绝")
+                                        .runCommand("&c[拒绝]", "/guild decline " + player.getName(), "&c点击拒绝 {player}"
+                                                .replace("{player}", player.getName()))
                         );
                     } else {
                         String failMessage = plugin.getConfigManager().getMessagesConfig().getString("invite.already-invited", "&c{player} 已经收到了邀请！");

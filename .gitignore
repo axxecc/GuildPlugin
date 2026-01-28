@@ -1,16 +1,3 @@
-#Eclipse and netbeans
-.classpath
-.project
-.settings
-/nbproject
-
-#build
-/dist
-/build
-/bin
-/lib
-/manifest.mf
-
 #Repo
 README
 LICENSE.txt
